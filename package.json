@@ -1,0 +1,24 @@
+{
+  "name": "backend-demo2",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/PriteshThorat/backend-demo2#readme",
+  "bugs": {
+    "url": "https://github.com/PriteshThorat/backend-demo2/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PriteshThorat/backend-demo2.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "prettier": "^3.5.3"
+  }
+}
