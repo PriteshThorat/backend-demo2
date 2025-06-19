@@ -9,8 +9,87 @@ import { registerUser } from "./user.controllers.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
+    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
+
+    const matchStage = {};
+
+    if(query) 
+        matchStage.title = { $regex: query, $options: 'i' };
+
+    if(userId) 
+        matchStage.owner = new mongoose.Types.ObjectId(String(userId));
+
+    const sortStage = {};
+    sortStage[sortBy || 'createdAt'] = sortType === 'asc' ? 1 : -1;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const parsedLimit = parseInt(limit);
+
+    const video = await Video.aggregate([
+        {
+            $match: matchStage
+        },
+        {
+            $sort: sortStage
+        },
+        {
+            $facet: {
+                data: [
+                    {
+                        $skip: skip
+                    },
+                    {
+                        $limit: parsedLimit
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        username: 1,
+                                        avatar: 1,
+                                        fullName: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            owner: {
+                                $first: "$owner"
+                            }
+                        }
+                    },
+                ],
+                totalCount: [
+                    {
+                        $count: 'count'
+                    }
+                ]
+            }
+        },
+        {
+            $project: {
+                data: 1,
+                total: { 
+                    $arrayElemAt: ["$totalCount.count", 0] 
+                }
+            }
+        }
+    ])
+
+    if(!video || video.length === 0 || !video[0].data || video[0].data.length === 0)
+        throw new ApiError(404, "No Data Found")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, video[0].data, "Fetched All Video Data"))
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
