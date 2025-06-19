@@ -96,10 +96,57 @@ const addComment = asyncHandler(async (req, res) => {
 
 const updateComment = asyncHandler(async (req, res) => {
     // TODO: update a comment
+    const { content } = req.body
+    const { commentId } = req.params
+
+    if(!content || !commentId)
+        throw new ApiError(400, "Content and Comment ID is required")
+
+    const commentPreData = await Comment.findById(commentId)
+    
+    if(!commentPreData)
+        throw new ApiError(404, "Comment Data Not Found")
+
+    if(commentPreData.owner.toString() !== req.user?._id.toString())
+        throw new ApiError(403, "You are not authorized to update this comment")
+
+    const comment = await Comment.findByIdAndUpdate(
+        commentId,
+        {
+            $set: {
+                content
+            }
+        },
+        {
+            new: true
+        }
+    )
+
+    if(!comment)
+        throw new ApiError(500, "Something went wrong while updating data")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, comment, "Data updated successfully"))
 })
 
 const deleteComment = asyncHandler(async (req, res) => {
     // TODO: delete a comment
+    const { commentId } = req.params
+
+    const commentPreData = await Comment.findById(commentId)
+    
+    if(!commentPreData)
+        throw new ApiError(404, "Comment Data Not Found")
+
+    if(commentPreData.owner.toString() !== req.user?._id.toString())
+        throw new ApiError(403, "You are not authorized to delete this comment")
+
+    await Comment.findByIdAndDelete(commentId)
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Data deleted successfully"))
 })
 
 export {
