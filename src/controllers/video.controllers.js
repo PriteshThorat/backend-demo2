@@ -1,12 +1,9 @@
-import mongoose, { isValidObjectId } from "mongoose"
+import mongoose from "mongoose"
 import { Video } from "../models/video.models.js"
-import { User } from "../models/user.models.js"
 import ApiError from "../utils/ApiError.js"
 import ApiResponse from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import uploadOnCloudinary from "../utils/cloudinary.js"
-import { registerUser } from "./user.controllers.js"
-
 
 const getAllVideos = asyncHandler(async (req, res) => {
     //TODO: get all videos based on query, sort, pagination

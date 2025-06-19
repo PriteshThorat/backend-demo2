@@ -71,48 +71,14 @@ const addComment = asyncHandler(async (req, res) => {
     if(!content?.trim())
         throw new ApiError(400, "Content is required")
 
-    const commentData = await Comment.create({
+    const comment = await Comment.create({
         content,
         video: videoId,
         owner: req.user?._id
     })
 
-    if(!commentData)
+    if(!comment)
         throw new ApiError(500, "Something went wrong while creating comment data")
-
-    const comment = await Comment.aggregate([
-        {
-            $match: {
-                _id: new mongoose.Types.ObjectId(String(commentData._id))
-            }
-        },
-        {
-            $lookup: {
-                from: "comments",
-                localField: "video",
-                foreignField: "_id",
-                as: "video"
-            }
-        },
-        {
-            $lookup: {
-                from: "comments",
-                localField: "owner",
-                foreignField: "_id",
-                as: "owner"
-            }
-        },
-        {
-            $addFields: {
-                owner: {
-                    $first: "$owner"
-                },
-                video: {
-                    $first: "$video"
-                }
-            }
-        }
-    ])
 
     return res
     .status(200)
