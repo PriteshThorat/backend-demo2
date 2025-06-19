@@ -5,6 +5,7 @@ import ApiError from "../utils/ApiError.js"
 import ApiResponse from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import uploadOnCloudinary from "../utils/cloudinary.js"
+import { registerUser } from "./user.controllers.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -186,6 +187,33 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+
+    if(!videoId?.trim())
+        throw new ApiError(400, "Video ID is missing")
+
+    const videoPreData = await Video.findById(videoId)
+
+    if(!videoPreData)
+        throw new ApiError(404, "Video Data Not Found")
+
+    if(videoPreData.owner.toString() !== req.user?._id.toString())
+        throw new ApiError(403, "You are not authorized to toggle the status of this video")
+
+    const video = await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $set: {
+                isPublished: !videoPreData.isPublished
+            }
+        },
+        {
+            new: true
+        }
+    )
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, video, "Public Status Toggled"))
 })
 
 export {
