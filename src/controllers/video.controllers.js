@@ -53,6 +53,65 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
+
+    if(!videoId?.trim())
+        throw new ApiError(400, "Video ID is missing")
+
+    const video = await Video.findById(videoId)
+
+    if(!video)
+        throw new ApiError(404, "Video Does not exist")
+
+    const videoAggregate = await Video.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(String(video._id))
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            },
+        },
+        {
+            $addFields: {
+                owner: {
+                    $first: "$owner"
+                }
+            }
+        },
+        {
+            $project: {
+                videoFile: 1,
+                thumbnail: 1,
+                title: 1,
+                description: 1,
+                duration: 1,
+                views: 1,
+                isPublished: 1,
+                owner: 1,
+            }
+        }
+    ])
+
+    if(!videoAggregate?.length)
+        throw new ApiError(404, "Video Does not exits")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, videoAggregate, "Video Data Fetched"))
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
