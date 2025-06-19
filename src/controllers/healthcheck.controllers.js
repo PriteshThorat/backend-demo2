@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js"
 import ApiResponse from "../utils/ApiResponse.js"
 
-const healthcheck = asyncHandler(async (req, res) => {
+const healthcheck = asyncHandler(async (_, res) => {
     //TODO: build a healthcheck response that simply returns the OK status as json with a message
 
     return res
