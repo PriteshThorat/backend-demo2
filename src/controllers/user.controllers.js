@@ -190,7 +190,7 @@ const getCurrentUser = asyncHandler(async(req, res) => {
 const updateAccoutDetails = asyncHandler(async(req, res) => {
     const { fullName, email } = req.body
 
-    if(!fullName && !email)
+    if(!fullName || !email)
         throw new ApiError(400, "All Fileds are required")
 
     const user = await User.findByIdAndUpdate(

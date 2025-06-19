@@ -122,18 +122,26 @@ const updateVideo = asyncHandler(async (req, res) => {
     if(!videoId?.trim())
         throw new ApiError(400, "Video ID is missing")
 
-    if([title, description].some(field => (field?.trim() === "")))
+    if(!title || !description)
         throw new ApiError(404, "All Fields are required")
 
     const thumbnailLocalPath = req.file?.path
 
     if(!thumbnailLocalPath)
         throw new ApiError(400, "Thumbnail file is missing")
-
+    
     const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
 
     if(!thumbnail)
         throw new ApiError(400, "Error while uploading on cloudinary")
+
+    const videoPreData = await Video.findById(videoId)
+
+    if(!videoPreData)
+        throw new ApiError(404, "Video Data Not Found")
+
+    if(videoPreData.owner.toString() !== req.user?._id.toString())
+        throw new ApiError(403, "You are not authorized to update this video")
 
     const video = await Video.findByIdAndUpdate(
         videoId,
@@ -155,8 +163,8 @@ const updateVideo = asyncHandler(async (req, res) => {
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
     //TODO: delete video
+    const { videoId } = req.params
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
