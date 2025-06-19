@@ -13,7 +13,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
     if(!videoId?.trim())
         throw new ApiError(400, "Video ID is missing")
 
-    const aggregation = await Comment.aggregate([
+    const aggregation = Comment.aggregate([
         {
             $match: {
                 video: new mongoose.Types.ObjectId(String(videoId))
@@ -21,7 +21,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "comments",
+                from: "videos",
                 localField: "video",
                 foreignField: "_id",
                 as: "video"
@@ -29,10 +29,19 @@ const getVideoComments = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "comments",
+                from: "users",
                 localField: "owner",
                 foreignField: "_id",
-                as: "owner"
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            avatar: 1,
+                            fullName: 1
+                        }
+                    }
+                ]
             }
         },
         {
