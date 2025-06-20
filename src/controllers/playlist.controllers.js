@@ -204,6 +204,14 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     if(!isValidObjectId(playlistId) || !isValidObjectId(videoId))
         throw new ApiError(400, "Invalid Playlist ID or Video ID")
 
+    const prePlaylist = await Playlist.findById(playlistId)
+
+    if(!prePlaylist)
+        throw new ApiError(400, "Invalid Playlist ID")
+
+    if(prePlaylist.owner.toString() !== req.user?._id.toString())
+        throw new ApiError(400, "You are not authorized to Add the videos to playlist")
+
     const playlist = await Playlist.findByIdAndUpdate(
         playlistId,
         {
@@ -215,9 +223,6 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
             new: true
         }
     )
-
-    if(!playlist)
-        throw new ApiError(400, "Invalid Playlist ID")
 
     return res
     .status(200)
@@ -234,6 +239,14 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     if(!isValidObjectId(playlistId) || !isValidObjectId(videoId))
         throw new ApiError(400, "Invalid Playlist ID or Video ID")
 
+    const prePlaylist = await Playlist.findById(playlistId)
+
+    if(!prePlaylist)
+        throw new ApiError(400, "Invalid Playlist ID")
+
+    if(prePlaylist.owner.toString() !== req.user?._id.toString())
+        throw new ApiError(400, "You are not authorized to delete the video from playlist")
+
     const playlist = await Playlist.findByIdAndUpdate(
         playlistId,
         {
@@ -246,17 +259,34 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
         }
     )
 
-    if(!playlist)
-        throw new ApiError(400, "Invalid Playlist ID")
-
     return res
     .status(200)
     .json(new ApiResponse(200, playlist, "Video removed from playlist successfully"))
 })
 
 const deletePlaylist = asyncHandler(async (req, res) => {
-    const {playlistId} = req.params
     // TODO: delete playlist
+    const { playlistId } = req.params
+
+    if(!playlistId)
+        throw new ApiError(404, "Playlist ID is required")
+
+    if(!isValidObjectId(playlistId))
+        throw new ApiError(400, "Invalid Playlist ID")
+
+    const prePlaylist = await Playlist.findById(playlistId)
+
+    if(!prePlaylist)
+        throw new ApiError(400, "Invalid Playlist ID")
+
+    if(prePlaylist.owner.toString() !== req.user?._id.toString())
+        throw new ApiError(400, "You are not authorized to delte this playlist")
+
+    await Playlist.findByIdAndDelete(playlistId)
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Playlist deleted successfully"))
 })
 
 const updatePlaylist = asyncHandler(async (req, res) => {

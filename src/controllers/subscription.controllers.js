@@ -17,7 +17,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid Channel ID")
 
     if(channelId.toString() === req.user?._id.toString())
-        throw new ApiError("You cannot subscribed to yourself")
+        throw new ApiError(400, "You cannot subscribed to yourself")
 
     const preSubscription = await Subscription.findOne({
         $and: [{ channel: channelId }, { subscriber: req.user?._id }]
