@@ -96,6 +96,48 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 // controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(async (req, res) => {
     const { subscriberId } = req.params
+
+    if(!subscriberId)
+        throw new ApiError(404, "Subscriber ID is required")
+
+    if(!isValidObjectId(subscriberId))
+        throw new ApiError(400, "Invalid Subscriber ID")
+
+    const subscription = await Subscription.aggregate([
+        {
+            $match: {
+                subscriber: new mongoose.Types.ObjectId(String(subscriberId))
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "channel",
+                foreignField: "_id",
+                as: "channel",
+                pipeline: [
+                    {
+                        $project: {
+                            avatar: 1,
+                            username: 1,
+                            fullName: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                channel: {
+                    $first: "$channel"
+                }
+            }
+        }
+    ])
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, subscription, "Channel List Fetched"))
 })
 
 export {
