@@ -26,7 +26,50 @@ const createTweet = asyncHandler(async (req, res) => {
 })
 
 const getUserTweets = asyncHandler(async (req, res) => {
-    // TODO: get user tweets
+    //TODO: get user tweets
+    const { userId } = req.params
+
+    if(!userId)
+        throw new ApiError(404, "User ID is required")
+
+    const tweet = await Tweet.aggregate([
+        {
+            $match: {
+                owner: new mongoose.Types.ObjectId(String(userId))
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            fullName: 1,
+                            username: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                owner: {
+                    $first: "$owner"
+                }
+            }
+        }
+    ])
+
+    if(!tweet)
+        throw new ApiError(500, "Something went wrong while getting the data")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, tweet, "Tweets Fetched"))
 })
 
 const updateTweet = asyncHandler(async (req, res) => {
