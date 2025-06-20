@@ -290,9 +290,43 @@ const deletePlaylist = asyncHandler(async (req, res) => {
 })
 
 const updatePlaylist = asyncHandler(async (req, res) => {
-    const {playlistId} = req.params
-    const {name, description} = req.body
     //TODO: update playlist
+    const { playlistId } = req.params
+    const { name, description } = req.body
+
+    if(!playlistId)
+        throw new ApiError(404, "Playlist ID is required")
+
+    if(!name || !description)
+        throw new ApiError(404, "All fields are required")
+
+    if(!isValidObjectId(playlistId))
+        throw new ApiError(400, "Invalid Playlist ID")
+
+    const prePlaylist = await Playlist.findById(playlistId)
+
+    if(!prePlaylist)
+        throw new ApiError(400, "Invalid Playlist ID")
+
+    if(prePlaylist.owner.toString() !== req.user?._id.toString())
+        throw new ApiError(400, "You are not authorized to update the playlist")
+
+    const playlist = await Playlist.findByIdAndUpdate(
+        playlistId,
+        {
+            $set: {
+                name,
+                description
+            }
+        },
+        {
+            new: true
+        }
+    )
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, playlist, "Playlist updated successfully"))
 })
 
 export {
