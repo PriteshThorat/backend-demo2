@@ -32,6 +32,11 @@ const getUserTweets = asyncHandler(async (req, res) => {
     if(!userId)
         throw new ApiError(404, "User ID is required")
 
+    const isValidUserId = isValidObjectId(userId)
+
+    if(!isValidUserId)
+        throw new ApiError(400, "Invalid User ID")
+
     const tweet = await Tweet.aggregate([
         {
             $match: {
@@ -80,6 +85,11 @@ const updateTweet = asyncHandler(async (req, res) => {
     if(!tweetId)
         throw new ApiError(404, "Tweet ID is required")
 
+    const isValidTweetId = isValidObjectId(tweetId)
+
+    if(!isValidTweetId)
+        throw new ApiError(400, "Invalid Tweet ID")
+
     if(!content)
         throw new ApiError(404, "Content is required")
 
@@ -110,6 +120,29 @@ const updateTweet = asyncHandler(async (req, res) => {
 
 const deleteTweet = asyncHandler(async (req, res) => {
     //TODO: delete tweet
+    const { tweetId } = req.params
+
+    if(!tweetId)
+        throw new ApiError(404, "Tweet ID is required")
+
+    const isValidTweetId = isValidObjectId(tweetId)
+
+    if(!isValidTweetId)
+        throw new ApiError(400, "Invalid Tweet ID")
+
+    const preTweet = await Tweet.findById(tweetId)
+
+    if(!preTweet)
+        throw new ApiError(400, "Invalid Tweet ID")
+
+    if(preTweet.owner.toString() !== req.user?._id.toString())
+        throw new ApiError(403, "You are not authorized to delete this tweeet")
+
+    await Tweet.findByIdAndDelete(tweetId)
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Tweet Deleted successfully"))
 })
 
 export {
