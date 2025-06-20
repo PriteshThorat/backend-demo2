@@ -74,6 +74,38 @@ const getUserTweets = asyncHandler(async (req, res) => {
 
 const updateTweet = asyncHandler(async (req, res) => {
     //TODO: update tweet
+    const { tweetId } = req.params
+    const { content } = req.body
+
+    if(!tweetId)
+        throw new ApiError(404, "Tweet ID is required")
+
+    if(!content)
+        throw new ApiError(404, "Content is required")
+
+    const preTweet = await Tweet.findById(tweetId)
+
+    if(!preTweet)
+        throw new ApiError(400, "Invalid Tweet ID")
+
+    if(preTweet.owner.toString() !== req.user?._id.toString())
+        throw new ApiError(403, "You are not authorized to update this tweet")
+
+    const tweet = await Tweet.findByIdAndUpdate(
+        tweetId,
+        {
+            $set: {
+                content
+            }
+        },
+        {
+            new: true
+        }
+    )
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, tweet, "Tweet Updated successfully"))
 })
 
 const deleteTweet = asyncHandler(async (req, res) => {
