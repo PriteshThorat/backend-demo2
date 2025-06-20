@@ -28,10 +28,13 @@ const createPlaylist = asyncHandler(async (req, res) => {
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
     //TODO: get user playlists
-    const {userId} = req.params
+    const { userId } = req.params
 
     if(!userId)
         throw new ApiError(404, "User ID is required")
+
+    if(!isValidObjectId(userId))
+        throw new ApiError(400, "Invalid User ID")
 
     const playlist = await Playlist.aggregate([
         {
@@ -99,14 +102,96 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         }
     ])
 
+    if(!playlist)
+        throw new ApiError(500, "Invalid User ID")
+
     return res
     .status(200)
     .json(new ApiResponse(200, playlist, "User Playlist Fetched"))
 })
 
 const getPlaylistById = asyncHandler(async (req, res) => {
-    const {playlistId} = req.params
     //TODO: get playlist by id
+    const { playlistId } = req.params
+
+    if(!playlistId)
+        throw new ApiError(404, "Playlist ID is required")
+
+    if(!isValidObjectId(playlistId))
+        throw new ApiError(400, "Invalid Playlist ID")
+
+    const playlist = await Playlist.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(String(playlistId))
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            fullName: 1,
+                            username: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "videos",
+                foreignField: "_id",
+                as: "videos",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullName: 1,
+                                        avatar: 1,
+                                        username: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            owner: {
+                                $first: "$owner"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                owner: {
+                    $first: "$owner"
+                }
+            }
+        }
+    ])
+
+    if(!playlist)
+        throw new ApiError(400, "Invalid Playlist ID")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, playlist, "Playlist Data Fetched"))
 })
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
